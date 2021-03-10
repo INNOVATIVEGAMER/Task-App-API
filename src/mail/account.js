@@ -4,8 +4,8 @@ sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 const sendWelcomeMail = (name, email) => {
 	const welcomeMail = {
-		to: email, // Change to your recipient
-		from: "prasadpatewar39@gmail.com", // Change to your verified sender
+		to: email,
+		from: "prasadpatewar39@gmail.com",
 		subject: "Welcome to our app",
 		text: `Thank you for joining our app ${name}`,
 	};
@@ -18,8 +18,8 @@ const sendWelcomeMail = (name, email) => {
 
 const sendAccountDeleteMail = (name, email) => {
 	const accountDeleteMail = {
-		to: email, // Change to your recipient
-		from: "prasadpatewar39@gmail.com", // Change to your verified sender
+		to: email,
+		from: "prasadpatewar39@gmail.com",
 		subject: "Account deleted",
 		text: `Sorry for your inconvience. ${name} hope you liked our app.`,
 	};
