@@ -2,7 +2,7 @@
   "version": 2,
   "functions": {
     "src/**/*.js": {
-      "runtime": "@vercel/node"
+      "runtime": "now-node@18.13.0"
     }
   },
   "rewrites": [
