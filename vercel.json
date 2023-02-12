@@ -2,7 +2,7 @@
   "version": 2,
   "functions": {
     "src/**/*.js": {
-      "runtime": "@now/node"
+      "runtime": "@now-node@latest"
     }
   },
   "rewrites": [
