@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "node ./src/index.js",
-    "dev": "env-cmd -f ./config/dev.env nodemon ./src/index.js",
+    "start": "node ./api/index.js",
+    "dev": "env-cmd -f ./config/dev.env nodemon ./api/index.js",
     "check-format": "prettier --ignore-path .gitignore --check \"**/*.js\"",
     "format": "prettier --ignore-path .gitignore --write \"**/*.js\""
   },
