@@ -1,14 +1,10 @@
 {
   "version": 2,
-  "functions": {
-    "src/**/*.js": {
-      "runtime": "now-node@18.13.0"
-    }
-  },
+
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/src/index.js"
+      "destination": "/api/index.js"
     }
   ]
 }
