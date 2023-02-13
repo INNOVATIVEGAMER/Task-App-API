@@ -1,7 +1,7 @@
 const express = require("express");
-const { connectToDB } = require("./db/mongoose");
-const userRouter = require("./Routers/userRouter");
-const taskRouter = require("./Routers/taskRouter");
+const { connectToDB } = require("../src/db/mongoose");
+const userRouter = require("../src/Routers/userRouter");
+const taskRouter = require("../src/Routers/taskRouter");
 const cors = require("cors");
 
 //Connect to database

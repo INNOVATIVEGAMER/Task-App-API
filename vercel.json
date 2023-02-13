@@ -1,9 +1,10 @@
 {
   "version": 2,
+
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/src/index.js"
+      "destination": "/api/index.js"
     }
   ]
 }
