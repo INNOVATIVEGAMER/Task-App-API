@@ -3,8 +3,23 @@ const multer = require("multer");
 const User = require("../models/userModel");
 const auth = require("../Middlewares/auth");
 const sharp = require("sharp");
+const { google } = require("googleapis");
 
 const router = express.Router();
+/**
+ * To use OAuth2 authentication, we need access to a CLIENT_ID, CLIENT_SECRET, AND REDIRECT_URI
+ * from the client_secret.json file. To get these credentials for your application, visit
+ * https://console.cloud.google.com/apis/credentials.
+ *
+ * For detail explanation of how this google ouath2.0 works -
+ * https://developers.google.com/identity/protocols/oauth2 (Overall Idea of oauth2.0)
+ * https://developers.google.com/identity/protocols/oauth2/web-server#node.js (Implementation in nodejs web server)
+ */
+const oauth2Client = new google.auth.OAuth2(
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  process.env.GOOGLE_REDIRECT_URI
+);
 
 //Create user in DB
 router.post("/users", async (req, res) => {
@@ -14,6 +29,66 @@ router.post("/users", async (req, res) => {
     const token = await user.generateAuthenticationToken();
     // sendWelcomeMail(user.name, user.email);
     res.status(201).send({ userDoc, token });
+  } catch (error) {
+    res.status(400).send(error);
+  }
+});
+
+// Create user in DB using GoogleSignUp
+router.post("/users/google", async (req, res) => {
+  try {
+    // Access scopes for users personal info, including any personal info you've made publicly available
+    const scopes = [
+      "https://www.googleapis.com/auth/userinfo.email",
+      "https://www.googleapis.com/auth/userinfo.profile",
+      "https://www.googleapis.com/auth/user.birthday.read",
+    ];
+
+    // Generate a url that asks permissions for the Drive activity scope
+    const authorizationUrl = oauth2Client.generateAuthUrl({
+      // Pass in the scopes array defined above.
+      scope: scopes,
+      // Enable incremental authorization. Recommended as a best practice.
+      include_granted_scopes: true,
+      // 'offline' (gets refresh_token)
+      access_type: "offline",
+    });
+
+    res.status(200).send({ url: authorizationUrl });
+  } catch (error) {
+    res.status(400).send(error);
+  }
+});
+
+router.get("/users/auth/google", async (req, res) => {
+  try {
+    const googleCode = req.query.code;
+    let { tokens } = await oauth2Client.getToken(googleCode);
+    oauth2Client.setCredentials(tokens);
+
+    google.options({ auth: oauth2Client });
+    const userRes = await google.oauth2("v2").userinfo.get({});
+    // The google people API is used here to get general info about user
+    // API config/console - https://console.cloud.google.com/apis/library/people.googleapis.com
+    // API docs - https://developers.google.com/people/api/rest/v1/people/get
+    const peopleAPI = google.people("v1");
+    const userBDRes = await peopleAPI.people.get({
+      resourceName: "people/me",
+      personFields: "birthdays",
+    });
+
+    const userBirthYear = userBDRes.data.birthdays[0].date.year;
+    const currentYear = new Date().getFullYear();
+    const userAge = currentYear - userBirthYear;
+
+    const userDoc = {
+      name: userRes.data.name,
+      email: userRes.data.email,
+      age: userAge,
+    };
+
+    console.log(userDoc);
+    res.status(200).send({ msg: "User created using Google OAuth2" });
   } catch (error) {
     res.status(400).send(error);
   }
