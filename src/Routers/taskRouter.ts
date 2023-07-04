@@ -1,7 +1,9 @@
-const express = require("express");
-const Task = require("../models/taskModel");
-const auth = require("../Middlewares/auth");
-const { query } = require("express");
+import express from "express";
+import Task from "../models/task/taskModel";
+import auth from "../middlewares/auth";
+import { query } from "express";
+import { QueryOptions } from "mongoose";
+import { TaskDocument } from "../models/task/taskTypes";
 
 const router = express.Router();
 
@@ -18,27 +20,33 @@ router.post("/tasks", auth, async (req, res) => {
 
 //Get all tasks for a authenticated user from DB
 router.get("/tasks", auth, async (req, res) => {
-  const match = {};
-  const options = {};
-  const sort = {};
+  const match: any = {};
+  const options: QueryOptions = {};
+  const sort: any = {};
   const sortSeparator = "_";
 
   //Filtering requested data
   if (req.query.completed) match.completed = req.query.completed === "true";
 
   //Paginating requested data
-  options.limit = parseInt(req.query.limit);
-  options.skip = parseInt(req.query.skip);
+  const limit = parseInt(req.query.limit as string);
+  const skip = parseInt(req.query.skip as string);
+
+  if (!isNaN(limit)) options.limit = limit;
+  if (!isNaN(skip)) options.skip = skip;
 
   //Sorting requested data
   if (req.query.sortBy) {
-    const sortTerms = req.query.sortBy.split(sortSeparator);
-    sort[sortTerms[0]] = sortTerms[1] === "desc" ? -1 : 1;
-    options.sort = sort;
+    const sortTerms = (req.query.sortBy as string).split(sortSeparator);
+    if (sortTerms.length === 2) {
+      const [sortField, sortOrder] = sortTerms;
+      sort[sortField] = sortOrder === "desc" ? -1 : 1;
+      options.sort = sort;
+    }
   }
 
   try {
-    await req.user.populate({ path: "tasks", match, options }).execPopulate();
+    await req.user.populate({ path: "tasks", match, options });
     const tasks = req.user.tasks;
     if (!tasks) {
       res.status(404).send({ error: "Tasks not found!!!" });
@@ -67,8 +75,9 @@ router.get("/tasks/:id", auth, async (req, res) => {
 
 //Update task by ID for a authenticated user in DB
 router.patch("/tasks/:id", auth, async (req, res) => {
-  const updates = Object.keys(req.body);
-  const allowedUpdates = ["description", "completed"];
+  type updateType = keyof TaskDocument;
+  const updates = Object.keys(req.body) as updateType[];
+  const allowedUpdates: updateType[] = ["description", "completed"];
 
   const isValidUpdates = updates.every((update) =>
     allowedUpdates.includes(update)
@@ -89,7 +98,7 @@ router.patch("/tasks/:id", auth, async (req, res) => {
     }
 
     updates.forEach((update) => {
-      task[update] = req.body[update];
+      task.set(update, req.body[update]);
     });
 
     const updatedTask = await task.save();
@@ -119,4 +128,4 @@ router.delete("/tasks/:id", auth, async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

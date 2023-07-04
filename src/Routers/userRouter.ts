@@ -1,9 +1,12 @@
-const express = require("express");
-const multer = require("multer");
-const User = require("../models/userModel");
-const auth = require("../Middlewares/auth");
-const sharp = require("sharp");
-const { google } = require("googleapis");
+import { UserDocument } from "./../models/user/userTypes";
+import express, { NextFunction, Request, Response } from "express";
+import multer from "multer";
+import User from "../models/user/userModel";
+import auth from "../middlewares/auth";
+import sharp from "sharp";
+import { google } from "googleapis";
+import envs from "../common/envs";
+import { UserDefaultBirthdate } from "../common/constants";
 
 const router = express.Router();
 /**
@@ -16,9 +19,9 @@ const router = express.Router();
  * https://developers.google.com/identity/protocols/oauth2/web-server#node.js (Implementation in nodejs web server)
  */
 const oauth2Client = new google.auth.OAuth2(
-  process.env.GOOGLE_CLIENT_ID,
-  process.env.GOOGLE_CLIENT_SECRET,
-  process.env.GOOGLE_REDIRECT_URI
+  envs.googleClientId,
+  envs.googleClientSecret,
+  envs.googleRedirectURL
 );
 
 //Create user in DB
@@ -63,7 +66,9 @@ router.post("/users/google", async (req, res) => {
 router.get("/users/auth/google", async (req, res) => {
   try {
     const googleCode = req.query.code;
-    let { tokens } = await oauth2Client.getToken(googleCode);
+    if (!googleCode) throw new Error("GoogleCode not recieved");
+
+    let { tokens } = await oauth2Client.getToken(googleCode as string);
     oauth2Client.setCredentials(tokens);
 
     google.options({ auth: oauth2Client });
@@ -77,8 +82,13 @@ router.get("/users/auth/google", async (req, res) => {
       personFields: "birthdays",
     });
 
-    const userBirthYear = userBDRes.data.birthdays[0].date.year;
-    const currentYear = new Date().getFullYear();
+    if (!userBDRes.data.birthdays)
+      throw new Error("user birthdate data not found on google");
+
+    const userBirthYear =
+      userBDRes.data.birthdays[0].date?.year ??
+      UserDefaultBirthdate.getUTCFullYear();
+    const currentYear = new Date().getUTCFullYear();
     const userAge = currentYear - userBirthYear;
 
     const userDoc = {
@@ -106,7 +116,7 @@ router.post("/users/login", async (req, res) => {
 
     res.send({ user, token });
   } catch (error) {
-    res.status(400).send(error.message);
+    res.status(400).send(error);
   }
 });
 
@@ -175,8 +185,9 @@ router.get("/users/:id", auth, async (req, res) => {
 
 //Update current authenticated user in DB
 router.patch("/users/me", auth, async (req, res) => {
-  const updates = Object.keys(req.body);
-  const allowedUpdates = ["name", "email", "password", "age"];
+  type updateType = keyof UserDocument;
+  const updates = Object.keys(req.body) as updateType[];
+  const allowedUpdates: updateType[] = ["name", "email", "password", "age"];
 
   const isValidUpdates = updates.every((update) =>
     allowedUpdates.includes(update)
@@ -189,9 +200,8 @@ router.patch("/users/me", auth, async (req, res) => {
 
   try {
     const user = req.user;
-
     updates.forEach((update) => {
-      user[update] = req.body[update];
+      user.set(update, req.body[update]);
     });
 
     const updatedUser = await user.save();
@@ -212,7 +222,7 @@ router.delete("/users/me", auth, async (req, res) => {
       return;
     }
 
-    const deletedUser = await user.remove();
+    const deletedUser = await User.deleteOne({ _id });
     // sendAccountDeleteMail(deletedUser.name, deletedUser.email);
     res.send(deletedUser);
   } catch (error) {
@@ -231,7 +241,7 @@ const avatar = multer({
     }
 
     //successfull validation
-    cb(undefined, true);
+    cb(null, true);
   },
 });
 
@@ -239,9 +249,9 @@ router.post(
   "/users/me/avatar",
   auth,
   avatar.single("avatar_image"),
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     try {
-      const imageBuffer = await sharp(req.file.buffer)
+      const imageBuffer = await sharp(req.file?.buffer)
         .resize({ width: 250, height: 250 })
         .png()
         .toBuffer();
@@ -249,10 +259,10 @@ router.post(
       await req.user.save();
       res.send("Avatar added successfully");
     } catch (error) {
-      res.status(500).send({ error: error.message });
+      res.status(500).send({ error });
     }
   },
-  (err, req, res, next) => {
+  (err: any, req: Request, res: Response, next: NextFunction) => {
     res.status(400).send({ error: err.message });
   }
 );
@@ -281,4 +291,4 @@ router.get("/users/:id/avatar", async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;

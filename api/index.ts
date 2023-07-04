@@ -1,14 +1,14 @@
-const express = require("express");
-const { connectToDB } = require("../src/db/mongoose");
-const userRouter = require("../src/Routers/userRouter");
-const taskRouter = require("../src/Routers/taskRouter");
-const cors = require("cors");
+import express from "express";
+import { connectToDB } from "../src/db/mongoose";
+import userRouter from "../src/Routers/userRouter";
+import taskRouter from "../src/Routers/taskRouter";
+import cors from "cors";
+import envs from "../src/common/envs";
 
 //Connect to database
 connectToDB();
 
 //Create configure express app
-const port = process.env.PORT;
 const app = express();
 
 // Add express middlewares
@@ -27,7 +27,6 @@ app.use(
   cors({
     origin: "*",
     credentials: true, //access-control-allow-credentials:true
-    optionSuccessStatus: 200,
   })
 );
 
@@ -36,8 +35,8 @@ app.use(userRouter);
 app.use(taskRouter);
 
 //Start the server on port
-app.listen(port, () => {
-  console.log("Server is up and running on port " + port);
+app.listen(envs.port, () => {
+  console.log("Server is up and running on port " + envs.port);
 });
 
-module.exports = app;
+export default app;

@@ -1,10 +1,12 @@
-const mongoose = require("mongoose");
-const validator = require("validator");
-const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
-const Task = require("./taskModel");
+import mongoose, { InferSchemaType, model, Schema } from "mongoose";
+import validator from "validator";
+import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
+import Task from "../task/taskModel";
+import envs from "../../common/envs";
+import { IUser, IUserMethods, UserModel, JWTToken } from "./userTypes";
 
-const userSchema = new mongoose.Schema(
+const userSchema = new Schema<IUser, UserModel, IUserMethods>(
   {
     name: { type: String, required: true, trim: true },
     age: { type: Number, default: 0 },
@@ -14,7 +16,7 @@ const userSchema = new mongoose.Schema(
       unique: true,
       trim: true,
       lowercase: true,
-      validate(value) {
+      validate(value: string) {
         if (!validator.isEmail(value))
           throw new Error("Invalid Email address!!!");
       },
@@ -24,7 +26,7 @@ const userSchema = new mongoose.Schema(
       required: true,
       minLength: 7,
       trim: true,
-      validate(value) {
+      validate(value: string) {
         if (value.toLowerCase().includes("password"))
           throw new Error("Weak Password!!!");
       },
@@ -63,15 +65,18 @@ userSchema.methods.toJSON = function () {
 
 userSchema.methods.generateAuthenticationToken = async function () {
   const user = this;
-  const secret = process.env.JWT_SECRET;
-  const token = jwt.sign({ _id: user._id.toString() }, secret);
+  const tokenData: JWTToken = { _id: user._id.toString() };
+  const token = jwt.sign(tokenData, envs.jwtSecret);
 
   user.tokens = user.tokens.concat({ token });
   await user.save();
   return token;
 };
 
-userSchema.statics.findByCredentials = async (email, password) => {
+userSchema.statics.findByCredentials = async (
+  email: string,
+  password: string
+) => {
   if (!email || !password) throw new Error("Invalid Credentials");
 
   const user = await User.findOne({ email });
@@ -87,23 +92,23 @@ userSchema.statics.findByCredentials = async (email, password) => {
 };
 
 //Hash the user password before saving in the database.
-userSchema.pre("save", async function (next) {
+userSchema.pre("save", async function () {
   const user = this;
 
   if (user.isModified("password"))
     user.password = await bcrypt.hash(user.password, 8);
-
-  next();
 });
 
-//Delete all tasks realted to a specific user when user gets deleted
-userSchema.pre("remove", async function (next) {
-  const user = this;
-  await Task.deleteMany({ owner: user._id });
+//Delete all tasks related to a specific user when user gets deleted
+userSchema.pre(
+  "deleteOne",
+  { document: true, query: false },
+  async function () {
+    const user = this;
+    await Task.deleteMany({ owner: user._id });
+  }
+);
 
-  next();
-});
+const User = model<IUser, UserModel>("User", userSchema);
 
-const User = mongoose.model("User", userSchema);
-
-module.exports = User;
+export default User;
