@@ -1,9 +1,9 @@
 import express from "express";
-import { connectToDB } from "../src/db/mongoose";
-import userRouter from "../src/Routers/userRouter";
-import taskRouter from "../src/Routers/taskRouter";
+import { connectToDB } from "./db/mongoose";
+import userRouter from "./Routers/userRouter";
+import taskRouter from "./Routers/taskRouter";
 import cors from "cors";
-import envs from "../src/common/envs";
+import envs from "./common/envs";
 
 //Connect to database
 connectToDB();
