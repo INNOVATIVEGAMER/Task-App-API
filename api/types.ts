@@ -1,4 +1,4 @@
-import { UserDocument } from "./models/user/userTypes";
+import { UserDocument } from "./../src/models/user/userTypes";
 export {};
 
 declare global {
