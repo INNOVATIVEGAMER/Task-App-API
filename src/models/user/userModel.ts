@@ -5,6 +5,8 @@ import jwt from "jsonwebtoken";
 import Task from "../task/taskModel";
 import envs from "../../common/envs";
 import { IUser, IUserMethods, UserModel, JWTToken } from "./userTypes";
+import { passwordFields } from "./regular/password";
+import { googleFields } from "./oauth/google/google";
 
 const userSchema = new Schema<IUser, UserModel, IUserMethods>(
   {
@@ -21,16 +23,6 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>(
           throw new Error("Invalid Email address!!!");
       },
     },
-    password: {
-      type: String,
-      required: true,
-      minLength: 7,
-      trim: true,
-      validate(value: string) {
-        if (value.toLowerCase().includes("password"))
-          throw new Error("Weak Password!!!");
-      },
-    },
     tokens: [
       {
         token: {
@@ -45,6 +37,12 @@ const userSchema = new Schema<IUser, UserModel, IUserMethods>(
   },
   { timestamps: true }
 );
+
+// Password Addon
+userSchema.add(passwordFields);
+
+// Oauth Addons
+userSchema.add(googleFields);
 
 userSchema.virtual("tasks", {
   ref: "Task",
@@ -84,7 +82,7 @@ userSchema.statics.findByCredentials = async (
   if (!user)
     throw new Error(`There is no account registered with ${email} address`);
 
-  const isMatch = await bcrypt.compare(password, user.password);
+  const isMatch = await bcrypt.compare(password, user.password ?? "");
 
   if (!isMatch) throw new Error("Invalid Password");
 
@@ -95,7 +93,7 @@ userSchema.statics.findByCredentials = async (
 userSchema.pre("save", async function () {
   const user = this;
 
-  if (user.isModified("password"))
+  if (user.password && user.isModified("password"))
     user.password = await bcrypt.hash(user.password, 8);
 });
 

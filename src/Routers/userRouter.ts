@@ -47,11 +47,9 @@ router.post("/users/google", async (req, res) => {
       "https://www.googleapis.com/auth/user.birthday.read",
     ];
 
-    // Generate a url that asks permissions for the Drive activity scope
+    // Generate a url that asks permissions for the relevant scopes
     const authorizationUrl = oauth2Client.generateAuthUrl({
-      // Pass in the scopes array defined above.
       scope: scopes,
-      // Enable incremental authorization. Recommended as a best practice.
       include_granted_scopes: true,
       // 'offline' (gets refresh_token)
       access_type: "offline",
