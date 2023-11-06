@@ -1,6 +1,6 @@
 import express from "express";
 import { connectToDB } from "../src/db/mongoose";
-import userRouter from "../src/Routers/userRouter";
+import userRouter from "../src/Routers/user/userRouter";
 import taskRouter from "../src/Routers/taskRouter";
 import cors from "cors";
 import envs from "../src/common/envs";
