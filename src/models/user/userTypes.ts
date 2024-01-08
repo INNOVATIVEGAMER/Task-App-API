@@ -29,6 +29,7 @@ export type UserDocument = HydratedDocument<IUser, IUserMethods>;
 
 export interface UserModel extends Model<IUser, {}, IUserMethods> {
   findByCredentials: (email: string, password: string) => Promise<UserDocument>;
+  findByGoogle: (email: string) => Promise<UserDocument> | Promise<null>;
 }
 
 export type JWTToken = {

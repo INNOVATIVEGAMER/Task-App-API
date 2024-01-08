@@ -11,7 +11,6 @@ interface PasswordFields {
 export const passwordFields: PasswordFields = {
   password: {
     type: String,
-    required: true,
     minLength: 7,
     trim: true,
     validate(value: string) {

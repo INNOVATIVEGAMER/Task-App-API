@@ -2,6 +2,7 @@ import { Router } from "express";
 import { google } from "googleapis";
 import envs from "../../common/envs";
 import { UserDefaultBirthdate } from "../../common/constants";
+import User from "../../models/user/userModel";
 
 const googleRouter = Router();
 /**
@@ -53,6 +54,18 @@ googleRouter.get("/re", async (req, res) => {
 
     google.options({ auth: oauth2Client });
     const userRes = await google.oauth2("v2").userinfo.get({});
+
+    // Check if we have a user with same email ID already registered using oauth
+    const userEmail = userRes.data.email;
+    if (userEmail) {
+      const oldUser = await User.findByGoogle(userEmail);
+      if (oldUser) {
+        const token = await oldUser.generateAuthenticationToken();
+        res.send({ oldUser, token, isOldUser: true });
+        return;
+      }
+    }
+
     // The google people API is used here to get general info about user
     // API config/console - https://console.cloud.google.com/apis/library/people.googleapis.com
     // API docs - https://developers.google.com/people/api/rest/v1/people/get
@@ -71,14 +84,18 @@ googleRouter.get("/re", async (req, res) => {
     const currentYear = new Date().getUTCFullYear();
     const userAge = currentYear - userBirthYear;
 
-    const userDoc = {
+    const userData = {
       name: userRes.data.name,
       email: userRes.data.email,
       age: userAge,
+      google: true,
     };
 
-    console.log(userDoc);
-    res.status(200).send({ msg: "User created using Google OAuth2" });
+    const user = new User(userData);
+    const userDoc = await user.save();
+    const token = await user.generateAuthenticationToken();
+
+    res.status(201).send({ userDoc, token });
   } catch (error) {
     res.status(400).send(error);
   }

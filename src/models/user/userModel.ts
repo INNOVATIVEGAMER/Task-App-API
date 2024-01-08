@@ -75,16 +75,38 @@ userSchema.statics.findByCredentials = async (
   email: string,
   password: string
 ) => {
-  if (!email || !password) throw new Error("Invalid Credentials");
+  if (!email) throw new Error("Invalid email address");
 
   const user = await User.findOne({ email });
 
   if (!user)
     throw new Error(`There is no account registered with ${email} address`);
 
-  const isMatch = await bcrypt.compare(password, user.password ?? "");
+  if (user.google)
+    throw new Error(
+      `There is account registered with ${email} address using Google. Please use google oauth to sign in`
+    );
 
+  if (!password) throw new Error("Invalid password");
+
+  const isMatch = await bcrypt.compare(password, user.password ?? "");
   if (!isMatch) throw new Error("Invalid Password");
+
+  return user;
+};
+
+userSchema.statics.findByGoogle = async (email: string) => {
+  if (!email) throw new Error("Invalid email address");
+
+  const user = await User.findOne({ email });
+  if (!user) return null;
+
+  // If user is signed up using email but then tried to login using google oauth
+  // Make the google flag on user data as true
+  if (!user.google) {
+    user.google = true;
+    await user.save();
+  }
 
   return user;
 };
