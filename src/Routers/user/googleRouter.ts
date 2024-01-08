@@ -61,7 +61,9 @@ googleRouter.get("/re", async (req, res) => {
       const oldUser = await User.findByGoogle(userEmail);
       if (oldUser) {
         const token = await oldUser.generateAuthenticationToken();
-        res.send({ oldUser, token, isOldUser: true });
+        res.redirect(
+          `${envs.frontendURL}/signin?token=${encodeURIComponent(token)}`
+        );
         return;
       }
     }
@@ -92,10 +94,12 @@ googleRouter.get("/re", async (req, res) => {
     };
 
     const user = new User(userData);
-    const userDoc = await user.save();
+    await user.save();
     const token = await user.generateAuthenticationToken();
 
-    res.status(201).send({ userDoc, token });
+    res.redirect(
+      `${envs.frontendURL}/signin?token=${encodeURIComponent(token)}`
+    );
   } catch (error) {
     res.status(400).send(error);
   }

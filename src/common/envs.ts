@@ -6,6 +6,7 @@ const getENVS = () => {
   const googleClientId = process.env.GOOGLE_CLIENT_ID;
   const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
   const googleRedirectURL = process.env.GOOGLE_REDIRECT_URL;
+  const frontendURL = process.env.FE_URL;
 
   if (!port) throw new Error("Port not defined");
   if (!baseConnectionURL) throw new Error("baseConnectionURL not defined");
@@ -14,6 +15,7 @@ const getENVS = () => {
   if (!googleClientId) throw new Error("googleClientId not defined");
   if (!googleClientSecret) throw new Error("googleClientSecret not defined");
   if (!googleRedirectURL) throw new Error("googleRedirectURL not defined");
+  if (!frontendURL) throw new Error("frontend URL is not defined");
 
   return {
     port,
@@ -23,6 +25,7 @@ const getENVS = () => {
     googleClientId,
     googleClientSecret,
     googleRedirectURL,
+    frontendURL,
   };
 };
 
